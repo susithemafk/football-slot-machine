@@ -19,7 +19,7 @@ export interface SpecialWin {
     name: SpecialWinType
 }
 
-interface GameState {
+export interface GameState {
     gameStatus: "IDLE" | "SPINNING" | "EVALUATING" | "WIN" | "SPECIAL_WIN"
 
     balance: number
@@ -34,6 +34,7 @@ interface GameState {
 
     // Nastavení
     settings: GameSettings
+    updateSettings: (newSettings: Partial<GameSettings>) => void
 
     // Akce
     setBet: (bet: number) => void
@@ -116,9 +117,24 @@ export const useGameStore = create<GameState>((set, get) => ({
         sfxVolume: 100,
     },
 
+    updateSettings: (newSettings) => {
+        set((state) => ({
+            settings: {
+                ...state.settings,
+                ...newSettings,
+            },
+        }))
+
+        // save game state after updating settings
+        get().saveGame()
+    },
+
     setBet: (bet: number) => {
         if (get().gameStatus !== "IDLE") return
         set({ currentBet: bet })
+
+        // save game state after changing bet
+        get().saveGame()
     },
 
     setGameStatus: (status) => set({ gameStatus: status }),
@@ -171,6 +187,9 @@ export const useGameStore = create<GameState>((set, get) => ({
                 }))
             }, 100)
         }, 100)
+
+        // save game state after spin
+        get().saveGame()
     },
 
     closeSpecialWin: (wonBonusAmount: number) => {
