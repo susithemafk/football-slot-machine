@@ -22,6 +22,7 @@ export function SpecialWinOverlay() {
     // VŽDY zpracováváme PRVNÍ prvek fronty (FIFO - First In, First Out)
     const currentWin = specialWins[0]
     const config = SPECIAL_WIN_CONFIGS[currentWin.name]
+    // TODO mozna tohle predelat pac pak mas: 3 řady 3x500 = 1500 + 10*vklad = 1500+500 = 2000 celkem což neni moc bonus za tři řady
     const bonusReward = currentBet * config.baseRewardMultiplier
 
     const handleShootPenalty = (scored: boolean) => {

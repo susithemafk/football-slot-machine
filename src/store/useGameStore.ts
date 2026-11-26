@@ -29,6 +29,9 @@ export interface GameState {
     specialWins: SpecialWin[]
     winningLines: { lineIndex: number; symbol: SymbolType; prize: number; winningLineShape: [number, number][] }[]
 
+    activeLineIndex: number | null
+    setActiveLineIndex: (index: number | null) => void
+
     // Aktuální zobrazená mřížka (4 sloupce, každý 3 symboly)
     grid: ReelGrid
 
@@ -104,6 +107,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     winNote: "",
     specialWins: [],
     winningLines: [],
+
+    activeLineIndex: null,
+    setActiveLineIndex: (index) => set({ activeLineIndex: index }),
 
     // default grid
     grid: [

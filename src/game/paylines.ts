@@ -2,7 +2,7 @@ import { ReelGrid, SpecialWin, SymbolType } from "../store/useGameStore"
 import { SPECIAL_WIN_PRIORITY } from "./specialWins"
 
 // Definice multiplikátorů pro jednotlivé symboly (kolikrát se násobí sázka)
-export const SYMBOL_MULTIPLIERS: Record<SymbolType, number> = {
+export const LINE_SYMBOL_MULTIPLIERS: Record<SymbolType, number> = {
     TROPHY: 50, // Pohár je hlavní výhra (Jackpot)
     BOOT: 20, // Kopačka
     WHISTLE: 15, // Píšťalka
@@ -116,8 +116,8 @@ export function evaluateGrid(grid: ReelGrid, currentBet: number): EvaluationResu
 
         // Kontrola, zda jsou všechny 3 symboly na linii shodné
         if (symbolA === symbolB && symbolB === symbolC) {
-            const multiplier = SYMBOL_MULTIPLIERS[symbolA] || 10
-            const lineWin = currentBet * multiplier
+            const lineMultiplier = LINE_SYMBOL_MULTIPLIERS[symbolA] || 10
+            const lineWin = currentBet * lineMultiplier
 
             totalWin += lineWin
             winningLines.push({
