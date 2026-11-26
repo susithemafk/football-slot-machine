@@ -32,35 +32,8 @@ export function App() {
     }, [winningLines, gameStatus, setActiveLineIndex])
 
     return (
-        <div style={{ padding: "20px", fontFamily: "sans-serif", background: "#111", color: "#fff", minHeight: "100vh" }}>
+        <div className="w-screen" style={{ padding: "20px", fontFamily: "sans-serif", background: "#111", color: "#fff", minHeight: "100vh" }}>
             <h1>⚽ Fotbalový Slot Automat</h1>
-
-            <div>
-                <div style={{ margin: "20px 0", fontSize: "18px" }}>
-                    <p>
-                        Kredit: <strong>{balance} Kč</strong>
-                    </p>
-                    <p>
-                        Sázka: <strong>{currentBet} Kč</strong>
-                    </p>
-                    <p>
-                        Stav automatu: <strong style={{ color: gameStatus === "SPINNING" ? "yellow" : "lightgreen" }}>{gameStatus}</strong>
-                    </p>
-
-                    {winningLines && winningLines.length > 0 && activeLineIndex !== null && (
-                        <p style={{ color: "gold", fontSize: "18px" }}>
-                            🏆 Zobrazuji výherní linii {activeLineIndex + 1} z {winningLines.length}
-                            (Výhra: {winningLines[activeLineIndex].prize} Kč)
-                        </p>
-                    )}
-
-                    {lastWin > 0 && <p style={{ color: "gold", fontSize: "22px" }}>GÓL! Celková výhra: {lastWin} Kč!</p>}
-                    {winNote && <pre style={{ background: "#222", padding: "10px", borderRadius: "5px", whiteSpace: "pre-wrap" }}>{winNote}</pre>}
-                </div>
-
-                {/* --- 2. ZDE NYNÍ VYKRESLUJEME PIXIJS PLÁTNO MÍSTO HTML DIVŮ --- */}
-            </div>
-            <GameCanvas />
 
             <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
                 <button
@@ -84,6 +57,33 @@ export function App() {
                 <button onClick={() => setBet(50)} disabled={gameStatus !== "IDLE"}>
                     Sázka: 50
                 </button>
+            </div>
+
+            <div className="flex justify-center items-center flex-nowrap flex-col-reverse">
+                <div style={{ margin: "20px 0", fontSize: "18px" }}>
+                    <p>
+                        Kredit: <strong>{balance} Kč</strong>
+                    </p>
+                    <p>
+                        Sázka: <strong>{currentBet} Kč</strong>
+                    </p>
+                    <p>
+                        Stav automatu: <strong style={{ color: gameStatus === "SPINNING" ? "yellow" : "lightgreen" }}>{gameStatus}</strong>
+                    </p>
+
+                    {winningLines && winningLines.length > 0 && activeLineIndex !== null && (
+                        <p style={{ color: "gold", fontSize: "18px" }}>
+                            🏆 Zobrazuji výherní linii {activeLineIndex + 1} z {winningLines.length}
+                            (Výhra: {winningLines[activeLineIndex].prize} Kč)
+                        </p>
+                    )}
+
+                    {lastWin > 0 && <p style={{ color: "gold", fontSize: "22px" }}>GÓL! Celková výhra: {lastWin} Kč!</p>}
+                    {winNote && <pre style={{ background: "#222", padding: "10px", borderRadius: "5px", whiteSpace: "pre-wrap" }}>{winNote}</pre>}
+                </div>
+
+                {/* --- 2. ZDE NYNÍ VYKRESLUJEME PIXIJS PLÁTNO MÍSTO HTML DIVŮ --- */}
+                <GameCanvas />
             </div>
 
             <SpecialWinOverlay />

@@ -63,16 +63,19 @@ export function GameCanvas() {
     useEffect(() => {
         if (gameStatus === "SPINNING") {
             isSpinningRef.current = true
-            spinSpeedsRef.current = [30, 35, 40] // Rychlost točení
-        } else if (gameStatus === "EVALUATING" || gameStatus === "IDLE") {
+            spinSpeedsRef.current = [30, 35, 40]
+            // spinSpeedsRef.current = [1, 1, 1]
+            // spinSpeedsRef.current = [0, 0, 0]
+        } else {
+            // Jakmile točení skončí (bez ohledu na to, zda jdeme do EVALUATING, WIN nebo SPECIAL_WIN),
+            // válce plynule dojedou a zastaví se.
             const timer = setTimeout(() => {
                 isSpinningRef.current = false
                 spinSpeedsRef.current = [0, 0, 0]
-                // Po zastavení srovnáme pozici kontejnerů přesně na 0
                 reelContainersRef.current.forEach((c) => {
                     if (c) c.y = 0
                 })
-            }, 600)
+            }, 400) // Zkráceno na 400ms pro svižnější zastavení
             return () => clearTimeout(timer)
         }
     }, [gameStatus])
@@ -91,7 +94,7 @@ export function GameCanvas() {
 
                 // Jakmile popojedeme o celý jeden krok, posuneme vnitřek a resetujeme y,
                 // čímž vytvoříme plynulý nekonečný pás bez "skákání"
-                if (container.y >= SLOT_STEP) {
+                if (container.y >= SLOT_STEP * 1.5) {
                     container.y -= SLOT_STEP
                 }
             })
@@ -107,7 +110,7 @@ export function GameCanvas() {
     const drawBoardBackground = useCallback((g: Graphics) => {
         g.clear()
         g.roundRect(0, 0, 340, 340, 16)
-        g.fill({ color: 0x111111, alpha: 0.95 })
+        g.fill({ color: 0x911111, alpha: 0.95 })
         g.stroke({ width: 4, color: 0x444444 })
     }, [])
 
@@ -116,7 +119,7 @@ export function GameCanvas() {
         g.clear()
         // Oblast, kde budou symboly viditelné (odpovídá rozměrům mřížky 3x3)
         g.rect(20, 20, 300, 300)
-        g.fill({ color: 0xffffff })
+        g.fill({ color: 0x111111 })
     }, [])
 
     if (!loaded) {
