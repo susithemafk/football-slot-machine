@@ -5,6 +5,12 @@ import { wait } from "../misc/utils"
 import { SpecialWinType } from "../game/specialWins"
 
 export type SymbolType = "BALL" | "WHISTLE" | "BOOT" | "TROPHY"
+export const SymbolsTextureSizes: Record<SymbolType, { width: number; height: number }> = {
+    BALL: { width: 72, height: 72 },
+    WHISTLE: { width: 85, height: 62 },
+    BOOT: { width: 80, height: 58 },
+    TROPHY: { width: 60, height: 60 },
+}
 
 // Definice jednoho slotu na mřížce (4 sloupce x 3 řádky)
 // Výsledek točení bude pole 4 sloupců, přičemž každý sloupec má 3 symboly

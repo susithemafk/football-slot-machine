@@ -3,6 +3,9 @@ import { useGameStore, SYMBOLS_POOL } from "./store/useGameStore"
 import { SpecialWinOverlay } from "./components/SpecialWinOverlay"
 import { GameCanvas } from "./components/GameCanvas" // <-- 1. Importujeme PixiJS plátno
 
+import bg_image from "/assets/images/main_bg.jpg" // Import obrázku pozadí
+import referee_image from "/assets/images/referee.webp" // Import obrázku pozadí
+
 export function App() {
     const { balance, currentBet, gameStatus, grid, lastWin, winNote, winningLines, activeLineIndex, setActiveLineIndex, spin, setBet, loadGame } =
         useGameStore()
@@ -32,7 +35,10 @@ export function App() {
     }, [winningLines, gameStatus, setActiveLineIndex])
 
     return (
-        <div className="w-screen" style={{ padding: "20px", fontFamily: "sans-serif", background: "#111", color: "#fff", minHeight: "100vh" }}>
+        <div className="w-screen relative" style={{ padding: "20px", fontFamily: "sans-serif", color: "#fff", minHeight: "100vh" }}>
+            {/* <div className="absolute"> */}
+            <img src={bg_image} alt="Background" className="w-screen h-screen object-cover" style={{ position: "fixed", top: 0, left: 0, zIndex: -1 }} />
+            {/* </div> */}
             <h1>⚽ Fotbalový Slot Automat</h1>
 
             <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
@@ -60,7 +66,7 @@ export function App() {
             </div>
 
             <div className="flex justify-center items-center flex-nowrap flex-col-reverse">
-                <div style={{ margin: "20px 0", fontSize: "18px" }}>
+                <div style={{ margin: "20px 0", fontSize: "18px" }} className="fixed bottom-0 left-0 text-center">
                     <p>
                         Kredit: <strong>{balance} Kč</strong>
                     </p>
@@ -83,7 +89,16 @@ export function App() {
                 </div>
 
                 {/* --- 2. ZDE NYNÍ VYKRESLUJEME PIXIJS PLÁTNO MÍSTO HTML DIVŮ --- */}
-                <GameCanvas />
+                <div className="relative flex items-center">
+                    <GameCanvas />
+                    <img
+                        src={referee_image}
+                        alt="Background"
+                        className="w-[800px] h-[800px] object-cover absolute -right-82"
+                        // style={{ position: "fixed", top: 0, right: -100, zIndex: 1, userSelect: "none" }}
+                        onDragStart={(e) => e.preventDefault()}
+                    />
+                </div>
             </div>
 
             <SpecialWinOverlay />
