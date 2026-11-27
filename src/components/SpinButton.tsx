@@ -32,7 +32,7 @@ export function SpinButton({ x, y, ballTexture, frameTexture, size = 140 }: Spin
             // Hra už dohrála, ale my chceme, aby se míč točil o 1 vteřinu déle (1000 ms)
             timeoutId = setTimeout(() => {
                 setIsButtonSpinning(false)
-            }, 400) // <-- Tady je onen časový offset 1 sekunda
+            }, 0) // <-- Tady je onen časový offset 1 sekunda
         }
 
         return () => {

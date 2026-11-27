@@ -8,6 +8,10 @@ import { OutlineFilter } from "pixi-filters"
 // Zaregistrujeme komponenty pro PixiJS v8 JSX
 extend({ Container, Graphics, Sprite })
 
+interface CustomSprite extends Sprite {
+    _symbolType?: SymbolType
+}
+
 const SYMBOL_SIZE = 90
 const GAP = 10
 const SLOT_STEP = SYMBOL_SIZE + GAP // 100px na 1 pozici
@@ -102,27 +106,45 @@ export function GameCanvas() {
             isSpinningRef.current = true
             spinSpeedsRef.current = [30, 35, 40]
         } else {
-            const timer = setTimeout(() => {
-                isSpinningRef.current = false
-                spinSpeedsRef.current = [0, 0, 0]
-                reelContainersRef.current.forEach((c) => {
-                    if (c) c.y = 0
-                })
-            }, 400)
-            return () => clearTimeout(timer)
+            // Jakmile točení ve store skončí, okamžitě zastavíme pohyb a srovnáme pozici
+            isSpinningRef.current = false
+            spinSpeedsRef.current = [0, 0, 0]
+            reelContainersRef.current.forEach((c) => {
+                if (c) c.y = 0
+            })
         }
     }, [gameStatus])
 
     // Game loop pro plynulý pohyb válců dolů
+    // Game loop pro plynulý pohyb válců a okamžitou animaci výher
+    // Game loop pro plynulý pohyb válců a zpomalenou, dramatickou animaci výher
+    // Game loop pro pohyb válců, animaci velikosti (width/height) a zatmavení
     useEffect(() => {
         const ticker = Ticker.shared
-        let elapsed = 0
+        let winAnimElapsed = 0
+        let lastActiveLine = activeLineIndex
 
         const animate = () => {
-            elapsed += 0.05 // Rychlost pulzování
+            if (gameStatus === "SPINNING") {
+                isSpinningRef.current = true
+                winAnimElapsed = 0
 
-            // 1. Původní animace točení válců
-            if (isSpinningRef.current) {
+                // Při roztočení resetujeme všechna alpha a vrátíme rozměry na čisté hodnoty ze slovníku
+                reelContainersRef.current.forEach((reel) => {
+                    if (!reel) return
+                    reel.children.forEach((itemContainer) => {
+                        const bg = itemContainer.children[0]
+                        const sprite = itemContainer.children[1] as CustomSprite
+
+                        if (bg) bg.alpha = 1.0
+                        if (sprite && sprite._symbolType) {
+                            sprite.alpha = 1.0
+                            sprite.width = SymbolsTextureSizes[sprite._symbolType].width
+                            sprite.height = SymbolsTextureSizes[sprite._symbolType].height
+                        }
+                    })
+                })
+
                 reelContainersRef.current.forEach((container, colIdx) => {
                     if (!container) return
                     container.y += spinSpeedsRef.current[colIdx]
@@ -130,17 +152,76 @@ export function GameCanvas() {
                         container.y -= SLOT_STEP
                     }
                 })
-            }
+            } else if (winningLines && winningLines.length > 0 && activeLineIndex !== null) {
+                if (lastActiveLine !== activeLineIndex) {
+                    winAnimElapsed = 0
+                    lastActiveLine = activeLineIndex
+                }
 
-            // 2. Nová animace pulzování výherních symbolů (scale pohlcení / přiblížení)
-            if (!isSpinningRef.current && winningLines && winningLines.length > 0) {
-                // Vytvoříme plynulý sinusový puls od 1.0 do 1.12 (zvětšení a zmenšení)
-                const pulseScale = 0.0475 + Math.sin(elapsed * 4.6) * 0.12 * 0.02
+                winAnimElapsed += 0.025
 
-                winningSpritesRef.current.forEach((item) => {
-                    if (item && item.sprite) {
-                        item.sprite.scale.set(pulseScale)
-                    }
+                let sizeMultiplier = 1.0
+                if (winAnimElapsed < 0.6) {
+                    const progress = winAnimElapsed / 0.6
+                    sizeMultiplier = 1.0 + Math.sin(progress * Math.PI) * 0.15
+                } else {
+                    const pulseTime = (winAnimElapsed - 0.6) * 2.5
+                    sizeMultiplier = 1.0 + Math.sin(pulseTime) * 0.03
+                }
+
+                const currentActiveLine = winningLines[activeLineIndex]
+
+                reelContainersRef.current.forEach((reel, colIdx) => {
+                    if (!reel) return
+
+                    reel.children.forEach((itemContainer, sIdx) => {
+                        const rowOffset = sIdx - 3
+                        const isWithinGrid = rowOffset >= 0 && rowOffset < VISIBLE_ROWS
+
+                        if (isWithinGrid) {
+                            const isCurrentActiveWinningSymbol = currentActiveLine
+                                ? currentActiveLine.winningLineShape.some(([c, r]) => c === colIdx && r === rowOffset)
+                                : false
+
+                            const bgGraphics = itemContainer.children[0]
+                            const symbolSprite = itemContainer.children[1] as CustomSprite
+
+                            if (symbolSprite && symbolSprite._symbolType) {
+                                const baseSize = SymbolsTextureSizes[symbolSprite._symbolType]
+                                const origW = baseSize.width
+                                const origH = baseSize.height
+
+                                if (isCurrentActiveWinningSymbol) {
+                                    symbolSprite.width = origW * sizeMultiplier
+                                    symbolSprite.height = origH * sizeMultiplier
+                                    symbolSprite.alpha = 1.0
+                                    // if (bgGraphics) bgGraphics.alpha = 1.0
+                                } else {
+                                    symbolSprite.width = origW
+                                    symbolSprite.height = origH
+                                    symbolSprite.alpha = 0.35
+                                }
+                                if (bgGraphics) bgGraphics.alpha = 0.5
+                            }
+                        }
+                    })
+                })
+            } else {
+                winAnimElapsed = 0
+                lastActiveLine = null
+
+                reelContainersRef.current.forEach((reel) => {
+                    if (!reel) return
+                    reel.children.forEach((itemContainer) => {
+                        const bg = itemContainer.children[0]
+                        const sprite = itemContainer.children[1] as CustomSprite
+                        if (bg) bg.alpha = 1.0
+                        if (sprite && sprite._symbolType) {
+                            sprite.width = SymbolsTextureSizes[sprite._symbolType].width
+                            sprite.height = SymbolsTextureSizes[sprite._symbolType].height
+                            sprite.alpha = 1.0
+                        }
+                    })
                 })
             }
         }
@@ -149,7 +230,7 @@ export function GameCanvas() {
         return () => {
             ticker.remove(animate)
         }
-    }, [winningLines])
+    }, [gameStatus, winningLines, activeLineIndex])
 
     if (!loaded) {
         return <div style={{ color: "white", textAlign: "center", padding: "40px" }}>Načítám grafiku válců...</div>
@@ -191,6 +272,11 @@ export function GameCanvas() {
 
                     {/* VRSTVA 3: Válce obalené maskou */}
                     <pixiContainer mask={maskObj} scale={1.5} x={-33} y={-33}>
+                        {(() => {
+                            winningSpritesRef.current = []
+                            return null
+                        })()}
+
                         {grid.map((column, colIdx) => {
                             const reelSymbols: SymbolType[] = [getRandomSymbol(), getRandomSymbol(), getRandomSymbol(), column[0], column[1], column[2]]
 
@@ -216,11 +302,15 @@ export function GameCanvas() {
                                             const width = SymbolsTextureSizes[symbol].width
 
                                             return (
-                                                <pixiContainer key={sIdx} x={0} y={rowOffset * SLOT_STEP}>
+                                                <pixiContainer
+                                                    key={sIdx}
+                                                    x={SYMBOL_SIZE / 2} // Střed sloupce
+                                                    y={rowOffset * SLOT_STEP + SYMBOL_SIZE / 2} // Střed řádku
+                                                >
                                                     <pixiGraphics
                                                         draw={(g) => {
                                                             g.clear()
-                                                            g.roundRect(0, 0, SYMBOL_SIZE, SYMBOL_SIZE, 10)
+                                                            g.roundRect(-SYMBOL_SIZE / 2, -SYMBOL_SIZE / 2, SYMBOL_SIZE, SYMBOL_SIZE, 10)
                                                             g.fill({ color: 0x2a2a2a, alpha: 1 })
 
                                                             if (isWinning && !isSpinningRef.current) {
@@ -234,24 +324,34 @@ export function GameCanvas() {
                                                     {texture && (
                                                         <pixiSprite
                                                             texture={texture}
-                                                            x={SYMBOL_SIZE / 2}
-                                                            y={SYMBOL_SIZE / 2}
+                                                            x={0}
+                                                            y={0}
                                                             anchor={0.5}
                                                             width={width}
                                                             height={height}
                                                             // filters={[new OutlineFilter({ thickness: 4, color: 0xffd700 })]}
                                                             filters={
-                                                                isWinning && !isSpinningRef.current
+                                                                isWinning && gameStatus !== "SPINNING" && gameStatus !== "EVALUATING"
                                                                     ? [new OutlineFilter({ thickness: 4, color: 0xd6c829 })]
                                                                     : []
                                                             }
-                                                            ref={(el) => {
-                                                                if (el && isWinning && !isSpinningRef.current) {
-                                                                    // Přidáme do pole pro pulzování
-                                                                    winningSpritesRef.current.push({ sprite: el, baseScale: 1 })
-                                                                } else if (el && !isWinning) {
-                                                                    // Odstraníme z pole, pokud už není výherní
-                                                                    winningSpritesRef.current = winningSpritesRef.current.filter((item) => item.sprite !== el)
+                                                            // ref={(el) => {
+                                                            //     if (el && isWinning && gameStatus !== "SPINNING" && gameStatus !== "EVALUATING") {
+                                                            //         // Přidáme do pole pro pulzování
+                                                            //         winningSpritesRef.current.push({ sprite: el, baseScale: 1 })
+                                                            //     } else if (el && !isWinning) {
+                                                            //         // Odstraníme z pole, pokud už není výherní
+                                                            //         winningSpritesRef.current = winningSpritesRef.current.filter((item) => item.sprite !== el)
+                                                            //     }
+                                                            // }}
+                                                            // ref={(el) => {
+                                                            //     if (el && isWinning && gameStatus !== "SPINNING" && gameStatus !== "EVALUATING") {
+                                                            //         winningSpritesRef.current.push({ sprite: el, baseScale: 1.0 })
+                                                            //     }
+                                                            // }}
+                                                            ref={(el: CustomSprite | null) => {
+                                                                if (el) {
+                                                                    el._symbolType = symbol
                                                                 }
                                                             }}
                                                         />

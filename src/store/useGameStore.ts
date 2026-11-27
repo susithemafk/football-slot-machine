@@ -99,12 +99,6 @@ function generateRandomGrid(): ReelGrid {
     return grid
 }
 
-const playWinAnimation = async () => {
-    await wait(5)
-    // console.log("playing win animation")
-    await wait(5)
-}
-
 export const useGameStore = create<GameState>((set, get) => ({
     gameStatus: "IDLE",
     balance: 1000,
@@ -162,45 +156,41 @@ export const useGameStore = create<GameState>((set, get) => ({
 
         // reset
         set({
-            balance: balance - currentBet, // lower balance
+            balance: balance - currentBet,
             gameStatus: "SPINNING",
             winningLines: [],
             lastWin: 0,
         })
 
-        // Simulace točení (1.5 sekundy)
+        // Sjednotíme točení na pevný čas (např. 800 ms)
         setTimeout(() => {
             const newGrid = generateRandomGrid()
+            const evaluation = evaluateGrid(newGrid, currentBet)
 
-            set({
-                grid: newGrid,
-                gameStatus: "EVALUATING",
-            })
-
-            // Vyhodnocení
-            setTimeout(async () => {
-                const evaluation = evaluateGrid(newGrid, currentBet)
-
-                if (evaluation.specialWins.length > 0) {
-                    set({
-                        gameStatus: "SPECIAL_WIN",
-                        specialWins: evaluation.specialWins,
-                    })
-                } else {
-                    await playWinAnimation()
-                    set({ gameStatus: "IDLE", specialWins: [] })
-                }
-
-                set((state) => ({
-                    balance: state.balance + evaluation.totalWin,
+            // Rovnou nastavíme novou mřížku a vyhodnotíme stav (žádné zbytečné vnořené timeouty)
+            if (evaluation.specialWins.length > 0) {
+                set({
+                    grid: newGrid,
+                    gameStatus: "SPECIAL_WIN",
+                    specialWins: evaluation.specialWins,
+                    balance: get().balance + evaluation.totalWin,
                     lastWin: evaluation.totalWin,
                     winNote: evaluation.note,
                     winningLines: evaluation.winningLines,
-                }))
-            }, 100)
-        }, 100)
+                })
+            } else {
+                set({
+                    grid: newGrid,
+                    gameStatus: "IDLE",
+                    specialWins: [],
+                    balance: get().balance + evaluation.totalWin,
+                    lastWin: evaluation.totalWin,
+                    winNote: evaluation.note,
+                    winningLines: evaluation.winningLines,
+                })
+            }
+        }, 800) // 800ms točení válců
 
-        // save game state after spin
         get().saveGame()
     },
 
